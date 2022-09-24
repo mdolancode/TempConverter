@@ -8,84 +8,52 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var inputUnit = "Celsius"
-    @State private var outputUnit = "Celsius"
-    @State private var inputNumber = 0.0
+    @State private var input = 0.0
+    @State private var inputUnit = UnitTemperature.celsius
+    @State private var outputUnit = UnitTemperature.fahrenheit
     @FocusState private var inputFocused: Bool
     
-    var tempUnits = ["Celsius", "Fahrenheit", "Kelvin"]
+    let units: [UnitTemperature] = [.celsius, .fahrenheit, .kelvin]
+    let formatter: MeasurementFormatter
     
-    var convertInputUnit: Double {
-        // First convert all inputs to Celsius
-        var input = inputNumber
-        if inputUnit == "Celsius" {
-            input += 0
-        } else if inputUnit == "Fahrenheit" {
-            input = (input - 32) / 1.8
-        } else {
-            input -= 273.15
-        }
-        return input
-    }
-
-    var convertOutputUnit: Double {
-        // Second convert input to output temperature units
-        var output = convertInputUnit
-        if outputUnit == "Celsius" {
-            output += 0
-        } else if outputUnit == "Fahrenheit" {
-            output = output * 1.8 + 32
-        } else {
-            output = output + 273.15
-        }
-        
-        return output
-    }
-    
-    var outputUnitToString: String {
-        // Convert to string and format.
-        let outputString = convertOutputUnit.formatted()
-        return "\(outputString) \(outputUnit.lowercased())"
+    var result: String {
+        let inputMeasurement = Measurement(value: input, unit: inputUnit)
+        let outputMeasurement = inputMeasurement.converted(to: outputUnit)
+        return formatter.string(from: outputMeasurement)
     }
     
     var body: some View {
         NavigationView {
             Form {
-                Section {
-                    Picker("Unit of temperature", selection: $inputUnit) {
-                        ForEach(tempUnits, id: \.self) {
-                            Text("\($0)")
-                        }
-                    } .pickerStyle(.segmented)
-                } header: {
-                    Text("Input Unit")
-                }
                 
                 Section {
-                    TextField("Temperature", value: $inputNumber, format: .number)
+                    TextField("Temperature", value: $input, format: .number)
                         .keyboardType(.decimalPad)
                         .focused($inputFocused)
                 } header: {
-                    Text("Temperature to Convert")
+                    Text("Amount to Convert")
                 }
-                
                 Section {
-                    Picker("Unit of temperature", selection: $outputUnit) {
-                        ForEach(tempUnits, id: \.self) {
-                            Text("\($0)")
+                    Picker("Convert from", selection: $inputUnit) {
+                        ForEach(units, id: \.self) {
+                            Text(formatter.string(from: $0).capitalized)
                         }
-                    } .pickerStyle(.segmented)
-                } header: {
-                    Text("Output Unit")
+                    }
+                    
+                    Picker("Convert to", selection: $outputUnit) {
+                        ForEach(units, id: \.self) {
+                            Text(formatter.string(from: $0).capitalized)
+                        }
+                    }
                 }
                 
                 Section {
-                    Text(outputUnitToString)
+                    Text(result)
                 } header: {
-                    Text("Converted Temperature")
+                    Text("Result")
                 }
             }
-            .navigationTitle("TempConverter")
+            .navigationTitle("Converter")
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
@@ -97,6 +65,11 @@ struct ContentView: View {
                 }
             }
         }
+    }
+    init() {
+        formatter = MeasurementFormatter()
+        formatter.unitOptions = .providedUnit
+        formatter.unitStyle = .long
     }
 }
 
